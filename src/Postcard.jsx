@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { typeOf } from './types'
 import { photoUrl } from './photos'
 import { formatShort } from './dates'
 
 // 明信片：照片不論尺寸，一律以固定比例裁切成主圖；多張照片會排成小相冊
-export default function Postcard({ entry, onEdit, onDelete }) {
+export default function Postcard({ entry, typeOf, onEdit, onDelete }) {
   const t = typeOf(entry.type)
   const photos = entry.photos || []
   const [cover, setCover] = useState(0)
@@ -34,9 +33,12 @@ export default function Postcard({ entry, onEdit, onDelete }) {
         <div className="pc-meta">
           <span className="pc-type">{t.emoji} {t.label}</span>
           {entry.value != null && entry.value !== '' && (
-            <span className="pc-value">{entry.value}<small>{entry.unit || ''}</small></span>
+            <span className={`pc-value ${entry.flow === 'in' ? 'income' : ''}`}>
+              {entry.flow === 'in' ? '+' : entry.flow === 'out' ? '−' : ''}{Number(entry.value).toLocaleString()}<small>{entry.unit || ''}</small>
+            </span>
           )}
         </div>
+        {entry.tag && <span className="pc-tag">{entry.tag}</span>}
         {entry.title && <h3>{entry.title}</h3>}
         {entry.content && <p className="pc-text">{entry.content}</p>}
         {entry.feeling && <p className="pc-feeling">身體感覺：{entry.feeling}</p>}

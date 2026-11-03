@@ -3,7 +3,7 @@ import { deletePhotos } from './photos'
 import { addDays, formatLong, todayKey } from './dates'
 import Postcard from './Postcard'
 
-export default function DayView({ dateKey, entries, onChangeDate, onEdit, onDeleted }) {
+export default function DayView({ dateKey, entries, typeOf, onChangeDate, onEdit, onDeleted }) {
   async function remove(entry) {
     if (!confirm('確定要刪除這則紀錄嗎？')) return
     await deletePhotos(entry.photos)
@@ -30,7 +30,7 @@ export default function DayView({ dateKey, entries, onChangeDate, onEdit, onDele
         </div>
       ) : (
         <div className="postcards">
-          {entries.map(e => <Postcard key={e.id} entry={e} onEdit={onEdit} onDelete={remove} />)}
+          {entries.map(e => <Postcard key={e.id} entry={e} typeOf={typeOf} onEdit={onEdit} onDelete={remove} />)}
         </div>
       )}
     </section>

@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react'
 import { monthGrid, todayKey, WEEKDAYS, fromKey } from './dates'
-import { typeOf, TYPES } from './types'
 import { photoUrl } from './photos'
 
-export default function Calendar({ entries, selected, onSelect, loading }) {
+export default function Calendar({ entries, typeOf, categories, selected, onSelect, loading }) {
   const today = todayKey()
   const init = fromKey(selected || today)
   const [year, setYear] = useState(init.getFullYear())
@@ -20,6 +19,7 @@ export default function Calendar({ entries, selected, onSelect, loading }) {
   const monthEntries = entries.filter(e => e.date.startsWith(prefix))
   const activeDays = new Set(monthEntries.map(e => e.date)).size
   const photoCount = monthEntries.reduce((n, e) => n + (e.photos?.length || 0), 0)
+  const spent = monthEntries.filter(e => e.flow === 'out').reduce((s, e) => s + Number(e.value || 0), 0)
 
   function shift(n) {
     const d = new Date(year, month + n, 1)
@@ -37,7 +37,7 @@ export default function Calendar({ entries, selected, onSelect, loading }) {
       <p className="cal-summary">
         {loading ? '載入中…' : monthEntries.length === 0
           ? '這個月還是空白的，按右下角 ＋ 開始記錄。'
-          : <>這個月有 <b>{activeDays}</b> 天留下紀錄，共 <b>{monthEntries.length}</b> 件事{photoCount > 0 && <>、<b>{photoCount}</b> 張照片</>}。</>}
+          : <>這個月有 <b>{activeDays}</b> 天留下紀錄，共 <b>{monthEntries.length}</b> 件事{photoCount > 0 && <>、<b>{photoCount}</b> 張照片</>}{spent > 0 && <>；支出 <b>{spent.toLocaleString()}</b> 元</>}。</>}
       </p>
 
       <div className="cal-grid">
@@ -71,8 +71,8 @@ export default function Calendar({ entries, selected, onSelect, loading }) {
       </div>
 
       <div className="legend">
-        {Object.entries(TYPES).map(([k, t]) => (
-          <span key={k}><i style={{ background: t.color }} />{t.label}</span>
+        {categories.map(t => (
+          <span key={t.key}><i style={{ background: t.color }} />{t.label}</span>
         ))}
       </div>
     </section>

@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import { TYPES, TYPE_KEYS, typeOf } from './types'
+import { makeTypeOf } from './types'
 import { uploadPhoto, deletePhotos, photoUrl } from './photos'
 
-export default function EntryForm({ user, dateKey, entry, onClose, onSaved }) {
+export default function EntryForm({ user, dateKey, categories, moneyTags, entry, onClose, onSaved }) {
+  const typeOf = makeTypeOf(categories)
   const [date, setDate] = useState(entry?.date || dateKey)
-  const [type, setType] = useState(entry?.type || 'exercise')
+  const [type, setType] = useState(entry?.type || categories[0]?.key || 'other')
   const [title, setTitle] = useState(entry?.title || '')
   const [content, setContent] = useState(entry?.content || '')
   const [value, setValue] = useState(entry?.value ?? '')
   const [unit, setUnit] = useState(entry?.unit || '')
   const [feeling, setFeeling] = useState(entry?.feeling || '')
+  const [tag, setTag] = useState(entry?.tag || '')
+  const [flow, setFlow] = useState(entry?.flow || 'out')   // 記帳：out 支出 / in 收入
   const [photos, setPhotos] = useState(entry?.photos || [])   // 已上傳的路徑
   const [pending, setPending] = useState([])                 // 尚未上傳的 File
   const [removed, setRemoved] = useState([])
@@ -19,14 +22,11 @@ export default function EntryForm({ user, dateKey, entry, onClose, onSaved }) {
 
   const t = typeOf(type)
 
-  // 若沒填單位，依類型給一個預設
+  // 換分類時帶入預設單位（編輯既有紀錄時不動）
   useEffect(() => {
     if (entry) return
-    if (type === 'exercise') setUnit('下')
-    else if (type === 'reading') setUnit('頁')
-    else if (type === 'habit') setUnit('次')
-    else setUnit('')
-  }, [type, entry])
+    setUnit(t.mode === 'money' ? '元' : (t.unit || ''))
+  }, [type]) // eslint-disable-line
 
   function pick(e) {
     setPending(p => [...p, ...Array.from(e.target.files || [])])
@@ -35,9 +35,10 @@ export default function EntryForm({ user, dateKey, entry, onClose, onSaved }) {
 
   async function save(e) {
     e.preventDefault()
-    if (!title && !content && !value && photos.length === 0 && pending.length === 0) {
+    if (!title && !content && value === '' && photos.length === 0 && pending.length === 0) {
       setErr('至少寫點什麼，或放一張照片。'); return
     }
+    if (t.mode === 'money' && value === '') { setErr('請填金額。'); return }
     setBusy(true); setErr('')
     try {
       const uploaded = []
@@ -46,8 +47,10 @@ export default function EntryForm({ user, dateKey, entry, onClose, onSaved }) {
         user_id: user.id,
         date, type, title, content,
         value: value === '' ? null : Number(value),
-        unit: unit || null,
+        unit: t.mode === 'none' ? null : (unit || null),
         feeling: feeling || null,
+        tag: t.mode === 'money' ? (tag || null) : null,
+        flow: t.mode === 'money' ? flow : null,
         photos: [...photos, ...uploaded],
       }
       const q = entry
@@ -70,12 +73,12 @@ export default function EntryForm({ user, dateKey, entry, onClose, onSaved }) {
         <h2>{entry ? '編輯紀錄' : '新增紀錄'}</h2>
 
         <div className="type-row">
-          {TYPE_KEYS.map(k => (
-            <button type="button" key={k}
-              className={`chip ${type === k ? 'on' : ''}`}
-              style={{ '--accent': TYPES[k].color }}
-              onClick={() => setType(k)}>
-              {TYPES[k].emoji} {TYPES[k].label}
+          {categories.map(c => (
+            <button type="button" key={c.key}
+              className={`chip ${type === c.key ? 'on' : ''}`}
+              style={{ '--accent': c.color }}
+              onClick={() => setType(c.key)}>
+              {c.emoji} {c.label}
             </button>
           ))}
         </div>
@@ -84,13 +87,36 @@ export default function EntryForm({ user, dateKey, entry, onClose, onSaved }) {
           <input type="date" value={date} onChange={e => setDate(e.target.value)} required />
         </label>
 
-        <label>標題
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder={t.hint} />
+        {t.mode === 'money' && (
+          <>
+            <div className="row">
+              <label>金額
+                <input type="number" inputMode="decimal" step="any" min="0" value={value} onChange={e => setValue(e.target.value)} placeholder="例如 120" autoFocus />
+              </label>
+              <label>收支
+                <div className="type-row">
+                  <button type="button" className={`chip ${flow === 'out' ? 'on' : ''}`} style={{ '--accent': '#d9573b' }} onClick={() => setFlow('out')}>支出</button>
+                  <button type="button" className={`chip ${flow === 'in' ? 'on' : ''}`} style={{ '--accent': '#3a7d5c' }} onClick={() => setFlow('in')}>收入</button>
+                </div>
+              </label>
+            </div>
+            <label>分類
+              <div className="type-row">
+                {moneyTags.map(mt => (
+                  <button type="button" key={mt} className={`chip small ${tag === mt ? 'on' : ''}`} style={{ '--accent': t.color }} onClick={() => setTag(tag === mt ? '' : mt)}>{mt}</button>
+                ))}
+              </div>
+            </label>
+          </>
+        )}
+
+        <label>{t.mode === 'money' ? '項目' : '標題'}
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder={t.hint || ''} />
         </label>
 
-        {t.metric && (
+        {t.mode === 'count' && (
           <div className="row">
-            <label>{t.metric}
+            <label>數值
               <input type="number" inputMode="decimal" step="any" value={value} onChange={e => setValue(e.target.value)} placeholder="例如 8" />
             </label>
             <label>單位
@@ -99,11 +125,11 @@ export default function EntryForm({ user, dateKey, entry, onClose, onSaved }) {
           </div>
         )}
 
-        <label>內容 / 心得
-          <textarea rows={4} value={content} onChange={e => setContent(e.target.value)} placeholder="今天發生了什麼、想到了什麼……" />
+        <label>{t.mode === 'money' ? '備註' : '內容 / 心得'}
+          <textarea rows={t.mode === 'money' ? 2 : 4} value={content} onChange={e => setContent(e.target.value)} placeholder="今天發生了什麼、想到了什麼……" />
         </label>
 
-        {type === 'food' && (
+        {t.has_feeling && (
           <label>之後身體的感覺
             <input value={feeling} onChange={e => setFeeling(e.target.value)} placeholder="例如：兩小時後有點脹氣" />
           </label>
