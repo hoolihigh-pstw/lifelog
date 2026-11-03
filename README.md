@@ -8,6 +8,9 @@
 - 🔢 **數值紀錄**：例如「吊單槓 8 下」，回顧頁會自動長出趨勢長條圖
 - 🍚 **飲食 + 身體反應**：飲食類型多一欄「之後身體的感覺」
 - 🔥 **回顧頁**：連續天數、12 週熱力圖、各類型累計
+- 💰 **記帳**：金額、收入／支出、子分類（飲食／交通／購物…可自訂），回顧頁有本月收支、子分類佔比、近 6 個月支出
+- 🏷️ **自訂分類**：設定頁（右上角 ⚙）可以新增（例如「欲望」）、改名、換顏色圖示、調順序、刪除分類
+- 💾 **資料備份**：一鍵匯出 zip（所有紀錄 + 全部照片），也可從 zip 還原到任何帳號
 - 🔐 **帳號密碼登入**，多裝置同步（Supabase Auth）
 - 📱 可加到手機主畫面當 app 用（PWA manifest）
 
@@ -67,12 +70,18 @@ npm run dev               # 打開 http://localhost:5173
 ```
 
 ## 之後想改東西
-- **新增／修改紀錄類型**：改 `src/types.js`，顏色、圖示、提示文字都在那裡。
+- **分類**：直接在 app 的 ⚙ 設定頁改；`src/types.js` 只有「第一次使用的預設分類」。
 - **明信片外觀**：`src/styles.css` 的 `/* 明信片 */` 區塊；照片比例在 `.pc-photo > img { aspect-ratio: 4 / 3 }`。
 - **照片上傳大小**：`src/photos.js` 的 `compressImage(file, 1600, 0.85)`，第二個參數是最長邊像素。
+
+## 已經部署過舊版？更新方式
+1. Supabase **SQL Editor** 再執行一次 `supabase/schema.sql`（整段可重複執行，會補上新的表和欄位）。
+2. 到 GitHub repo 把新版檔案上傳覆蓋（`src/` 整個資料夾和 `package.json`），Vercel 會自動重新部署。
+3. 重新整理頁面，右上角會多一個 ⚙，分類會自動建好預設的七個。
 
 ## 常見問題
 - **註冊後說要去信箱確認** → 到 Supabase **Authentication → Providers → Email** 關掉 Confirm email，或去信箱點確認連結。
 - **照片上傳失敗** → 確認 `schema.sql` 有完整執行（它會建 `photos` bucket 和權限）。到 Supabase **Storage** 看是否有 `photos` 這個 bucket。
+- **更新後出現「讀取資料失敗」** → 新版需要新的資料表，請再執行一次 `schema.sql`。
 - **打開網頁一片空白** → 多半是 Vercel 環境變數沒設或打錯，到 Vercel 專案 **Settings → Environment Variables** 檢查後 **Redeploy**。
 - **Supabase 免費方案限制**：500 MB 資料庫、1 GB 檔案儲存。照片上傳前會壓到 1600px 以內（一張大約 200–400 KB），大概能放兩三千張；不夠時再升級即可。
