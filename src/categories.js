@@ -7,7 +7,9 @@ export async function loadCategories(userId) {
     .from('categories').select('*').order('sort').order('created_at')
   if (error) throw error
   if (!data || data.length === 0) {
-    const rows = DEFAULT_CATEGORIES.map((c, i) => ({ ...c, user_id: userId, sort: i }))
+    const rows = DEFAULT_CATEGORIES.map((c, i) => ({
+      ...c, has_feeling: !!c.has_feeling, unit: c.unit || '', hint: c.hint || '', user_id: userId, sort: i,
+    }))
     const ins = await supabase.from('categories').insert(rows).select()
     if (ins.error) throw ins.error
     data = ins.data
