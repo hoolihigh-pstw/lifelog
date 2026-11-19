@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { todayKey, addDays, formatShort } from './dates'
 
 // 回顧頁：連續天數、各類型總量、最近 12 週熱力圖、每個標題（例如「吊單槓」）的趨勢
-export default function Stats({ entries, typeOf, categories }) {
+export default function Stats({ entries, typeOf, categories, onOpenCategory }) {
   const today = todayKey()
   const dates = useMemo(() => new Set(entries.map(e => e.date)), [entries])
 
@@ -97,10 +97,10 @@ export default function Stats({ entries, typeOf, categories }) {
           const b = byType[t.key]
           if (!b) return null
           return (
-            <div key={t.key} className="ts" style={{ '--accent': t.color }}>
+            <button key={t.key} className="ts" style={{ '--accent': t.color }} onClick={() => onOpenCategory(t.key)}>
               <span className="ts-label">{t.emoji} {t.label}</span>
-              <span className="ts-n">{b.n} 則 · {b.days.size} 天{b.sum > 0 && <> · 累計 {b.sum}{b.unit}</>}</span>
-            </div>
+              <span className="ts-n">{b.n} 則 · {b.days.size} 天{b.sum > 0 && <> · 累計 {b.sum}{b.unit}</>}<i className="ts-go">›</i></span>
+            </button>
           )
         })}
       </div>

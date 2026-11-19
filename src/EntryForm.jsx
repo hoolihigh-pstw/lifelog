@@ -3,10 +3,10 @@ import { supabase } from './supabase'
 import { makeTypeOf } from './types'
 import { uploadPhoto, deletePhotos, photoUrl } from './photos'
 
-export default function EntryForm({ user, dateKey, categories, moneyTags, entry, onClose, onSaved }) {
+export default function EntryForm({ user, dateKey, categories, moneyTags, entry, defaultType, onClose, onSaved }) {
   const typeOf = makeTypeOf(categories)
   const [date, setDate] = useState(entry?.date || dateKey)
-  const [type, setType] = useState(entry?.type || categories[0]?.key || 'other')
+  const [type, setType] = useState(entry?.type || defaultType || categories[0]?.key || 'other')
   const [title, setTitle] = useState(entry?.title || '')
   const [content, setContent] = useState(entry?.content || '')
   const [value, setValue] = useState(entry?.value ?? '')

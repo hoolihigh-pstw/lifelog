@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { photoUrl } from './photos'
-import { formatShort } from './dates'
+import { formatShort, fromKey, WEEKDAYS } from './dates'
 
 // 明信片：照片不論尺寸，一律以固定比例裁切成主圖；多張照片會排成小相冊
-export default function Postcard({ entry, typeOf, onEdit, onDelete }) {
+export default function Postcard({ entry, typeOf, onEdit, onDelete, showDate }) {
   const t = typeOf(entry.type)
   const photos = entry.photos || []
   const [cover, setCover] = useState(0)
@@ -31,7 +31,10 @@ export default function Postcard({ entry, typeOf, onEdit, onDelete }) {
 
       <div className="pc-body">
         <div className="pc-meta">
-          <span className="pc-type">{t.emoji} {t.label}</span>
+          <span className="pc-type">
+            {t.emoji} {t.label}
+            {showDate && <span className="pc-date">{formatShort(entry.date)} 週{WEEKDAYS[fromKey(entry.date).getDay()]}</span>}
+          </span>
           {entry.value != null && entry.value !== '' && (
             <span className={`pc-value ${entry.flow === 'in' ? 'income' : ''}`}>
               {entry.flow === 'in' ? '+' : entry.flow === 'out' ? '−' : ''}{Number(entry.value).toLocaleString()}<small>{entry.unit || ''}</small>

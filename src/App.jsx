@@ -5,6 +5,7 @@ import Calendar from './Calendar'
 import DayView from './DayView'
 import EntryForm from './EntryForm'
 import Stats from './Stats'
+import CategoryView from './CategoryView'
 import Settings from './Settings'
 import { todayKey } from './dates'
 import { makeTypeOf } from './types'
@@ -16,7 +17,8 @@ export default function App() {
   const [categories, setCategories] = useState([])
   const [moneyTags, setMoneyTags] = useState([])
   const [selected, setSelected] = useState(todayKey())
-  const [view, setView] = useState('calendar') // calendar | day | stats | settings
+  const [view, setView] = useState('calendar') // calendar | day | stats | category | settings
+  const [catKey, setCatKey] = useState(null) // 分類回顧正在看的分類
   const [editing, setEditing] = useState(null) // null | 'new' | entry
   const [loading, setLoading] = useState(false)
   const [fatal, setFatal] = useState('')
@@ -56,6 +58,7 @@ export default function App() {
   const user = session.user
 
   function openDay(key) { setSelected(key); setView('day') }
+  function openCategory(key) { setCatKey(key); setView('category') }
 
   return (
     <div className="app">
@@ -64,7 +67,7 @@ export default function App() {
         <nav>
           <button className={view === 'calendar' ? 'on' : ''} onClick={() => setView('calendar')}>日曆</button>
           <button className={view === 'day' ? 'on' : ''} onClick={() => setView('day')}>當日</button>
-          <button className={view === 'stats' ? 'on' : ''} onClick={() => setView('stats')}>回顧</button>
+          <button className={view === 'stats' || view === 'category' ? 'on' : ''} onClick={() => setView('stats')}>回顧</button>
           <button className={view === 'settings' ? 'on' : ''} onClick={() => setView('settings')} aria-label="設定">⚙</button>
         </nav>
       </header>
@@ -89,7 +92,17 @@ export default function App() {
             onDeleted={loadAll}
           />
         )}
-        {view === 'stats' && <Stats entries={entries} typeOf={typeOf} categories={categories} />}
+        {view === 'stats' && <Stats entries={entries} typeOf={typeOf} categories={categories} onOpenCategory={openCategory} />}
+        {view === 'category' && (
+          <CategoryView
+            category={typeOf(catKey)}
+            entries={entries.filter(e => e.type === catKey)}
+            typeOf={typeOf}
+            onBack={() => setView('stats')}
+            onEdit={setEditing}
+            onDeleted={loadAll}
+          />
+        )}
         {view === 'settings' && (
           <>
             <Settings user={user} categories={categories} moneyTags={moneyTags} entries={entries} onChanged={loadAll} />
@@ -112,11 +125,12 @@ export default function App() {
           categories={categories}
           moneyTags={moneyTags}
           entry={editing === 'new' ? null : editing}
+          defaultType={view === 'category' ? catKey : undefined}
           onClose={() => setEditing(null)}
           onSaved={(savedDate) => {
             setEditing(null)
             setSelected(savedDate)
-            setView('day')
+            if (view !== 'category') setView('day') // 在分類回顧裡編輯／新增，就留在原地
             loadAll()
           }}
         />
